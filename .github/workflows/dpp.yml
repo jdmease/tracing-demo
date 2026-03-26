@@ -1,0 +1,47 @@
+name: Git Monitoring & Scanning
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: '0 0 * * 1'  
+  workflow_dispatch:    
+
+jobs:
+  notify_on_pr:
+    name: Notify on PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Send PR details to server
+        run: |
+          echo "Sending PR details to the server..."
+          curl -X POST https://deepcodepro.intdigital.ru/api/gitmonitor/gitlab/merge-request/diffs \
+            -H "Content-Type: application/json" \
+            -d '{
+              "repositoryUrl": "https://github.com/${{ github.repository }}",
+              "repositoryId": ${{ github.repository_id }},
+              "pullRequestId": ${{ github.event.pull_request.number }},
+              "accessToken": "${{ secrets.REPO_TOKEN }}"
+            }'
+
+  send_to_scan_app:
+    name: Send to Scan App
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code (требуется для доступа к репозиторию)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Send to scan App
+        run: |
+          echo "Sending to scan App..."
+          curl -X POST https://deepcodepro.intdigital.ru/api/gitscanning/scan \
+            -H "Content-Type: application/json" \
+            -d '{
+              "repositoryUrl": "https://github.com/${{ github.repository }}",
+              "repositoryId": ${{ github.repository_id }},
+              "accessToken": "${{ secrets.REPO_TOKEN }}"
+            }'
