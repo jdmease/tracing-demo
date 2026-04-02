@@ -13,29 +13,33 @@ import org.springframework.web.bind.annotation.RestController;
 public class DemoController {
 
     private final Logger log = LoggerFactory.getLogger(DemoController.class);
-
+    private final Tracer tracer;
 
     public DemoController(Tracer tracer) {
         this.tracer = tracer;
     }
 
-    private final Tracer tracer;
-
     @GetMapping("/hello")
     public String hello() {
-        log.info("hello start");
+        log.info("Handling /hello request");
         Span span = tracer.nextSpan().name("custom-hello-span").start();
-        try (Tracer.SpanInScope scope = tracer.withSpan(span)) {
-            Thread.sleep(100); // Имитация обработки
-            log.info("hello okay");
+        try (Tracer.SpanInScope ignored = tracer.withSpan(span)) {
+            simulateProcessing();
+            log.info("Successfully handled /hello request");
             return "Hello with tracing!";
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.error("error {}", e.getMessage());
-            return "Error";
+            log.error("Request processing interrupted", e);
+            return "Error occurred during processing";
         } finally {
-            log.info("hello finally");
-            span.end();
+            if (span != null) {
+                span.end();
+            }
+            log.info("Finished handling /hello request");
         }
+    }
+
+    private void simulateProcessing() throws InterruptedException {
+        Thread.sleep(100); // Simulate processing delay
     }
 }
