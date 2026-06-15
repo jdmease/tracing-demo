@@ -22,5 +22,5 @@ jobs:
               "repositoryUrl": "https://github.com/${{ github.repository }}",
               "repositoryId": "${{ github.repository }}",
               "pullRequestId": ${{ github.event.pull_request.number }},
-              "accessToken": "${{ github.actor }}"
+              "username": "${{ github.actor }}"
             }'
